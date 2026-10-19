@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+[x-cloak] {
+    display: none;
+}
+
+body {
+    @apply bg-background text-ink antialiased;
+}
+
+@keyframes page-enter {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.app-page-enter > * {
+    animation: page-enter 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.app-page-enter > * > * {
+    animation: page-enter 360ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.app-page-enter > * > *:nth-child(2) {
+    animation-delay: 50ms;
+}
+
+.app-page-enter > * > *:nth-child(3) {
+    animation-delay: 100ms;
+}
+
+.app-page-enter > * > *:nth-child(4) {
+    animation-delay: 150ms;
+}
+
+.app-sidebar nav a,
+.app-sidebar > div a,
+.app-sidebar > div button {
+    transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.app-sidebar nav a:hover,
+.app-sidebar > div a:hover,
+.app-sidebar > div button:hover {
+    transform: translateX(2px);
+}
+
+.app-page-enter a[href],
+.app-page-enter button:not(:disabled) {
+    transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.app-page-enter button:not(:disabled):active {
+    transform: scale(0.98);
+}
+
+.app-page-enter :is(a[href], button, input, select, textarea):focus-visible {
+    outline: 2px solid rgb(37 99 235 / 55%);
+    outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

@@ -1,0 +1,16 @@
+{
+    "name": "Sistem Informasi Dispensasi",
+    "short_name": "Dispensasi",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#F7F9FC",
+    "theme_color": "#163A5F",
+    "icons": [
+        {
+            "src": "/images/icon/icon.png",
+            "sizes": "468x469",
+            "type": "image/png",
+            "purpose": "any"
+        }
+    ]
+}
