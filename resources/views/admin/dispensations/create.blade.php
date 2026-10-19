@@ -49,6 +49,8 @@
                     @error('student_ids.*')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
 
+                <x-signatory-picker :signatories="$schoolSignatories" />
+
                 <div class="bg-surface border border-line rounded-xl p-5 space-y-4">
                     <h3 class="text-sm font-semibold text-ink">Bukti / Lampiran</h3>
                     <x-ui.input label="File" name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" help="PDF, JPG, PNG, DOC. Maks 5MB." :error="$errors->first('file')" />

@@ -39,16 +39,34 @@
             </div>
 
             <div class="bg-surface border border-line rounded-xl p-5 space-y-4">
-                <h3 class="text-sm font-semibold text-ink">Penanggung Jawab</h3>
-                <x-ui.select label="Guru Penanggung Jawab" name="responsibles[0][teacher_id]" required :error="$errors->first('responsibles.0.teacher_id')">
-                    <option value="">Pilih guru</option>
-                    @foreach($teachers as $teacher)
-                        <option value="{{ $teacher->id }}" @selected(old('responsibles.0.teacher_id') == $teacher->id)>{{ $teacher->user->name }}</option>
-                    @endforeach
-                </x-ui.select>
+                <h3 class="text-sm font-semibold text-ink">Penanggung Jawab & Pembimbing</h3>
+                <div class="grid sm:grid-cols-3 gap-4">
+                    <x-ui.select label="Guru Penanggung Jawab" name="responsibles[0][teacher_id]" required :error="$errors->first('responsibles.0.teacher_id')">
+                        <option value="">Pilih guru</option>
+                        @foreach($teachers as $teacher)
+                            <option value="{{ $teacher->id }}" @selected(old('responsibles.0.teacher_id') == $teacher->id)>{{ $teacher->user->name }}</option>
+                        @endforeach
+                    </x-ui.select>
+                    <x-ui.select label="Pembimbing (opsional)" name="responsibles[1][teacher_id]" :error="$errors->first('responsibles.1.teacher_id')">
+                        <option value="">— Tidak ada —</option>
+                        @foreach($teachers as $teacher)
+                            <option value="{{ $teacher->id }}" @selected(old('responsibles.1.teacher_id') == $teacher->id)>{{ $teacher->user->name }}</option>
+                        @endforeach
+                    </x-ui.select>
+                    <x-ui.select label="Pendamping (opsional)" name="responsibles[2][teacher_id]" :error="$errors->first('responsibles.2.teacher_id')">
+                        <option value="">— Tidak ada —</option>
+                        @foreach($teachers as $teacher)
+                            <option value="{{ $teacher->id }}" @selected(old('responsibles.2.teacher_id') == $teacher->id)>{{ $teacher->user->name }}</option>
+                        @endforeach
+                    </x-ui.select>
+                </div>
                 <input type="hidden" name="responsibles[0][responsibility_type]" value="PENANGGUNG_JAWAB">
+                <input type="hidden" name="responsibles[1][responsibility_type]" value="PEMBIMBING">
+                <input type="hidden" name="responsibles[2][responsibility_type]" value="PENDAMPING">
                 @error('responsibles')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
             </div>
+
+            <x-signatory-picker :signatories="$schoolSignatories" />
 
             <div class="bg-surface border border-line rounded-xl p-5 space-y-4">
                 <h3 class="text-sm font-semibold text-ink">Peserta</h3>

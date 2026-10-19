@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Dispensation;
 use App\Models\DispensationAttachment;
+use App\Models\SchoolSignatory;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -31,6 +32,7 @@ class DispensationService
                 'location' => $data['location'] ?? null,
                 'destination' => $data['destination'] ?? null,
                 'status' => Dispensation::STATUS_SUBMITTED,
+                'signature_details' => $this->signatureDetails($data['signatory_ids'] ?? []),
             ]);
 
             $studentIds = $data['student_ids'] ?? [];
@@ -87,6 +89,7 @@ class DispensationService
                 'location' => $data['location'] ?? null,
                 'destination' => $data['destination'] ?? null,
                 'status' => Dispensation::STATUS_ADMIN_REVIEW,
+                'signature_details' => $this->signatureDetails($data['signatory_ids'] ?? []),
             ]);
 
             foreach ($data['student_ids'] as $studentId) {
@@ -94,6 +97,10 @@ class DispensationService
             }
 
             foreach ($data['responsibles'] ?? [] as $resp) {
+                if (empty($resp['teacher_id'])) {
+                    continue;
+                }
+
                 $dispensation->responsibles()->create([
                     'teacher_id' => $resp['teacher_id'],
                     'responsibility_type' => $resp['responsibility_type'],
@@ -128,5 +135,32 @@ class DispensationService
             'file_type' => $file->getClientMimeType() ?? $file->getClientOriginalExtension(),
             'file_size' => $file->getSize(),
         ]);
+    }
+
+    /**
+     * @param  array<int, int|string>  $signatoryIds
+     * @return array<int, array{position: string, name: string}>
+     */
+    private function signatureDetails(array $signatoryIds): array
+    {
+        if ($signatoryIds === []) {
+            return [];
+        }
+
+        $signatories = SchoolSignatory::query()
+            ->whereIn('id', $signatoryIds)
+            ->get()
+            ->keyBy('id');
+
+        return collect($signatoryIds)
+            ->map(fn (int|string $id): ?array => $signatories->has($id)
+                ? [
+                    'position' => $signatories->get($id)->position,
+                    'name' => $signatories->get($id)->name,
+                ]
+                : null)
+            ->filter()
+            ->values()
+            ->all();
     }
 }

@@ -39,6 +39,7 @@
             </div>
 
             <div class="bg-surface border border-line rounded-xl p-5 space-y-4 h-fit">
+                <x-signatory-picker :signatories="$schoolSignatories" />
                 <h3 class="text-sm font-semibold text-ink">Bukti / Lampiran</h3>
                 <x-ui.input label="File" name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" help="PDF, JPG, PNG, DOC. Maks 5MB." :error="$errors->first('file')" />
                 <x-ui.button type="submit" class="w-full">Kirim Pengajuan</x-ui.button>

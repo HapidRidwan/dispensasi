@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\DispensationType;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -35,16 +36,31 @@ class StoreActivityDispensationRequest extends FormRequest
             'destination' => ['nullable', 'string', 'max:255'],
             'student_ids' => ['required', 'array', 'min:1'],
             'student_ids.*' => ['exists:students,id'],
+            'signatory_ids' => ['nullable', 'array'],
+            'signatory_ids.*' => ['integer', 'distinct', Rule::exists('school_signatories', 'id')->where('is_active', true)],
             'responsibles' => ['nullable', 'array'],
-            'responsibles.*.teacher_id' => ['required', 'exists:teachers,id'],
+            'responsibles.*.teacher_id' => ['nullable', 'exists:teachers,id'],
             'responsibles.*.responsibility_type' => ['required', 'in:PENANGGUNG_JAWAB,PEMBIMBING,PENDAMPING'],
             'responsibles.*.notes' => ['nullable', 'string'],
             'file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
         ];
     }
 
-    public function withValidator(\Illuminate\Contracts\Validation\Validator $validator): void
+    public function withValidator(Validator $validator): void
     {
-        $validator->sometimes('responsibles', ['required', 'array', 'min:1'], fn () => $this->user()?->isAdmin());
+        if (! $this->user()?->isAdmin()) {
+            return;
+        }
+
+        $validator->sometimes('responsibles', ['required', 'array', 'min:1'], fn () => true);
+        $validator->after(function (Validator $validator): void {
+            $responsibles = $this->input('responsibles', []);
+            $hasAssignedTeacher = is_array($responsibles)
+                && collect($responsibles)->contains(fn ($responsible) => is_array($responsible) && filled($responsible['teacher_id'] ?? null));
+
+            if (! $hasAssignedTeacher) {
+                $validator->errors()->add('responsibles', 'Pilih minimal satu guru penanggung jawab.');
+            }
+        });
     }
 }

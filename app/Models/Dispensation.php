@@ -44,6 +44,7 @@ class Dispensation extends Model
         'status',
         'rejection_reason',
         'document_number',
+        'signature_details',
     ];
 
     protected function casts(): array
@@ -51,6 +52,7 @@ class Dispensation extends Model
         return [
             'date_start' => 'date',
             'date_end' => 'date',
+            'signature_details' => 'array',
         ];
     }
 

@@ -63,6 +63,8 @@
                 <input type="hidden" name="responsibles[2][responsibility_type]" value="PENDAMPING">
             </div>
 
+            <x-signatory-picker :signatories="$schoolSignatories" />
+
             <div class="bg-surface border border-line rounded-xl p-5 space-y-4" x-data="{ q: '', students: @js(\App\Models\Student::with('user')->get()->map(fn ($s) => ['id' => $s->id, 'name' => $s->user->name, 'nis' => $s->nis, 'class' => $s->enrollments()->where('is_active', true)->first()?->class?->name])), selected: [] }">
                 <h3 class="text-sm font-semibold text-ink">Peserta</h3>
                 <x-ui.input label="Cari Siswa" x-model="q" placeholder="Nama atau NIS" />

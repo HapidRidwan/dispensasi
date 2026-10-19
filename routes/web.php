@@ -1,12 +1,14 @@
 <?php
 
 use App\Http\Controllers\Admin\ClassController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DataImportController;
 use App\Http\Controllers\Admin\DispensationController as AdminDispensationController;
 use App\Http\Controllers\Admin\DispensationTypeController;
 use App\Http\Controllers\Admin\DocumentController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\SchoolSignatoryController;
 use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Admin\TeacherAssignmentController;
 use App\Http\Controllers\Admin\TeacherController;
@@ -16,10 +18,8 @@ use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\Student\DispensationController as StudentDispensationController;
 use App\Http\Controllers\Student\NotificationController as StudentNotificationController;
 use App\Http\Controllers\Teacher\DispensationController as TeacherDispensationController;
-use App\Http\Controllers\Admin\DashboardController;
 use App\Models\Dispensation;
-use App\Models\DispensationLog;
-use App\Models\Student;
+use App\Models\SchoolSignatory;
 use App\Models\TeacherAssignment;
 use Illuminate\Support\Facades\Route;
 
@@ -90,10 +90,14 @@ Route::middleware(['auth', 'role:admin', 'require-admin-2fa'])->prefix('admin')-
     Route::post('/dispensations/{dispensation}/generate-document', [AdminDispensationController::class, 'generateDocument'])->name('dispensations.generate-document');
 
     Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
+    Route::get('/documents/{document}/print', [DocumentController::class, 'print'])->name('documents.print');
     Route::get('/documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
     Route::post('/documents/{document}/sign', [DocumentController::class, 'sign'])->name('documents.sign');
     Route::post('/documents/{document}/stamp', [DocumentController::class, 'stamp'])->name('documents.stamp');
     Route::post('/documents/{document}/finalize', [DocumentController::class, 'finalize'])->name('documents.finalize');
+    Route::get('/school-signatories', [SchoolSignatoryController::class, 'index'])->name('school-signatories.index');
+    Route::post('/school-signatories', [SchoolSignatoryController::class, 'store'])->name('school-signatories.store');
+    Route::post('/school-signatories/{schoolSignatory}/toggle-active', [SchoolSignatoryController::class, 'toggleActive'])->name('school-signatories.toggle-active');
 
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 });
@@ -147,12 +151,16 @@ Route::middleware(['auth', 'role:guru'])->prefix('guru')->name('guru.')->group(f
         ]);
     })->name('dashboard');
     Route::get('/dispensations', [TeacherDispensationController::class, 'index'])->name('dispensations.index');
-    Route::get('/dispensations/create', fn () => view('guru.dispensations.create'))->name('dispensations.create');
+    Route::get('/dispensations/create', fn () => view('guru.dispensations.create', [
+        'schoolSignatories' => SchoolSignatory::query()->where('is_active', true)->orderBy('position')->orderBy('name')->get(),
+    ]))->name('dispensations.create');
     Route::get('/dispensations/{dispensation}', [TeacherDispensationController::class, 'show'])->name('dispensations.show');
     Route::post('/dispensations', [TeacherDispensationController::class, 'store'])->name('dispensations.store');
     Route::post('/dispensations/{dispensation}/verify', [TeacherDispensationController::class, 'verify'])->name('dispensations.verify');
     Route::get('/activities', [TeacherDispensationController::class, 'index'])->name('activities.index');
-    Route::get('/activities/create', fn () => view('guru.activities.create'))->name('activities.create');
+    Route::get('/activities/create', fn () => view('guru.activities.create', [
+        'schoolSignatories' => SchoolSignatory::query()->where('is_active', true)->orderBy('position')->orderBy('name')->get(),
+    ]))->name('activities.create');
     Route::get('/activities/{dispensation}', [TeacherDispensationController::class, 'showActivity'])->name('activities.show');
     Route::post('/activities', [TeacherDispensationController::class, 'storeActivity'])->name('activities.store');
     Route::get('/notifications', [App\Http\Controllers\Guru\NotificationController::class, 'index'])->name('notifications.index');
@@ -177,7 +185,9 @@ Route::middleware(['auth', 'role:siswa'])->prefix('siswa')->name('siswa.')->grou
         ]);
     })->name('dashboard');
     Route::get('/dispensations', [StudentDispensationController::class, 'index'])->name('dispensations.index');
-    Route::get('/dispensations/create', fn () => view('siswa.dispensations.create'))->name('dispensations.create');
+    Route::get('/dispensations/create', fn () => view('siswa.dispensations.create', [
+        'schoolSignatories' => SchoolSignatory::query()->where('is_active', true)->orderBy('position')->orderBy('name')->get(),
+    ]))->name('dispensations.create');
     Route::get('/dispensations/{dispensation}', [StudentDispensationController::class, 'show'])->name('dispensations.show');
     Route::post('/dispensations', [StudentDispensationController::class, 'store'])->name('dispensations.store');
     Route::get('/notifications', [StudentNotificationController::class, 'index'])->name('notifications.index');

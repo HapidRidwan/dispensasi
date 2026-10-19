@@ -5,7 +5,10 @@
                 <h2 class="text-lg font-semibold text-ink">{{ $document->document_number }}</h2>
                 <p class="text-sm text-muted">{{ $document->dispensation->title }}</p>
             </div>
-            <x-ui.badge :status="$document->document_status">{{ $document->document_status }}</x-ui.badge>
+            <div class="flex items-center gap-3">
+                <a href="{{ route('admin.documents.print', $document) }}" class="text-sm text-primary hover:underline">Cetak</a>
+                <x-ui.badge :status="$document->document_status">{{ $document->document_status }}</x-ui.badge>
+            </div>
         </div>
 
         <div class="bg-surface border border-line rounded-xl p-5">

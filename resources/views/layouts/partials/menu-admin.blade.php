@@ -85,6 +85,13 @@
     </svg>
     Dokumen
 </a>
+<a href="{{ route('admin.school-signatories.index') }}"
+   class="flex items-center gap-3 rounded-xl border-l-2 px-3 py-2.5 text-[13px] font-medium transition {{ request()->routeIs('admin.school-signatories.*') ? 'border-primary bg-blue-50 text-primary' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-ink' }}">
+    <svg class="h-[18px] w-[18px] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+        <path d="M12 14v7m-4 0h8m-9-7h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v7a2 2 0 002 2z"/>
+    </svg>
+    Penandatangan
+</a>
 <a href="{{ route('admin.reports.index') }}"
    class="flex items-center gap-3 rounded-xl border-l-2 px-3 py-2.5 text-[13px] font-medium transition {{ request()->routeIs('admin.reports.*') ? 'border-primary bg-blue-50 text-primary' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-ink' }}">
     <svg class="h-[18px] w-[18px] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">

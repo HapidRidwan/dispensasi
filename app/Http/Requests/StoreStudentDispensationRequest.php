@@ -44,6 +44,8 @@ class StoreStudentDispensationRequest extends FormRequest
             'time_end' => ['nullable'],
             'location' => ['nullable', 'string', 'max:255'],
             'destination' => ['nullable', 'string', 'max:255'],
+            'signatory_ids' => ['nullable', 'array'],
+            'signatory_ids.*' => ['integer', 'distinct', Rule::exists('school_signatories', 'id')->where('is_active', true)],
             'file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
         ];
 

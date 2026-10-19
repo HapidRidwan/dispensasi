@@ -7,6 +7,7 @@ use App\Http\Requests\StoreActivityDispensationRequest;
 use App\Http\Requests\StoreStudentDispensationRequest;
 use App\Models\Dispensation;
 use App\Models\DispensationType;
+use App\Models\SchoolSignatory;
 use App\Models\Student;
 use App\Models\Teacher;
 use App\Services\ApprovalService;
@@ -49,6 +50,7 @@ class DispensationController extends Controller
                 ->orderBy('name')
                 ->get(),
             'students' => Student::query()->with('user')->orderBy('nis')->get(),
+            'schoolSignatories' => SchoolSignatory::query()->where('is_active', true)->orderBy('position')->orderBy('name')->get(),
         ]);
     }
 
@@ -74,6 +76,7 @@ class DispensationController extends Controller
                 ->get(),
             'students' => Student::query()->with(['user', 'enrollments.class'])->orderBy('nis')->get(),
             'teachers' => Teacher::query()->with('user')->where('is_active', true)->get(),
+            'schoolSignatories' => SchoolSignatory::query()->where('is_active', true)->orderBy('position')->orderBy('name')->get(),
         ]);
     }
 

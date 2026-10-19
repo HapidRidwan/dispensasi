@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Document;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class DocumentController extends Controller
 {
@@ -30,6 +31,17 @@ class DocumentController extends Controller
     {
         return view('admin.documents.show', [
             'document' => $document->load(['dispensation', 'endorsements.user']),
+        ]);
+    }
+
+    public function print(Document $document): View
+    {
+        return view('admin.documents.print', [
+            'document' => $document->load([
+                'dispensation.type',
+                'dispensation.responsibles.teacher.user',
+                'dispensation.recipients.student.user',
+            ]),
         ]);
     }
 

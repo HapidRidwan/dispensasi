@@ -1,8 +1,11 @@
 <x-app-layout>
     <div class="max-w-6xl mx-auto space-y-5">
-        <div>
-            <h2 class="text-lg font-semibold text-ink">Dokumen</h2>
-            <p class="text-sm text-muted">Dokumen PDF yang telah diterbitkan.</p>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <h2 class="text-lg font-semibold text-ink">Dokumen</h2>
+                <p class="text-sm text-muted">Dokumen dispensasi yang telah diterbitkan.</p>
+            </div>
+            <a href="{{ route('admin.school-signatories.index') }}" class="text-sm text-primary hover:underline">Kelola Penandatangan</a>
         </div>
 
         <x-data-search placeholder="Cari nomor dokumen, pengajuan, atau status..." />
