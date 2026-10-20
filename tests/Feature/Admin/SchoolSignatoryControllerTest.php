@@ -130,7 +130,12 @@ class SchoolSignatoryControllerTest extends TestCase
             ->assertSee('PEMBIMBING')
             ->assertSee('PENANGGUNG JAWAB')
             ->assertSee($teacher->user->name)
-            ->assertSee($mentor->user->name);
+            ->assertSee($mentor->user->name)
+            ->assertSee('YAYASAN PENDIDIKAN SUMEDANG (YPS)')
+            ->assertSee('images/icon/yayasan.png')
+            ->assertSee('data-logo-input')
+            ->assertSee('Nomor')
+            ->assertSee($document->document_number);
     }
 
     public function test_activity_requires_at_least_one_teacher_responsible(): void

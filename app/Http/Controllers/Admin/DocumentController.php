@@ -39,6 +39,7 @@ class DocumentController extends Controller
         return view('admin.documents.print', [
             'document' => $document->load([
                 'dispensation.type',
+                'dispensation.applicant',
                 'dispensation.responsibles.teacher.user',
                 'dispensation.recipients.student.user',
             ]),
