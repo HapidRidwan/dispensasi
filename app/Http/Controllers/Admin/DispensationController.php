@@ -10,11 +10,15 @@ use App\Models\DispensationType;
 use App\Models\SchoolSignatory;
 use App\Models\Student;
 use App\Models\Teacher;
+use App\Models\TeacherAssignment;
 use App\Services\ApprovalService;
 use App\Services\DispensationService;
 use App\Services\DocumentService;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class DispensationController extends Controller
@@ -51,6 +55,7 @@ class DispensationController extends Controller
                 ->get(),
             'students' => Student::query()->with('user')->orderBy('nis')->get(),
             'schoolSignatories' => SchoolSignatory::query()->where('is_active', true)->orderBy('position')->orderBy('name')->get(),
+            'picketAssignments' => $this->picketAssignments(),
         ]);
     }
 
@@ -95,7 +100,8 @@ class DispensationController extends Controller
     public function show(Dispensation $dispensation)
     {
         return view('admin.dispensations.show', [
-            'dispensation' => $dispensation->load(['applicant', 'type', 'recipients.student.user', 'responsibles.teacher.user', 'attachments', 'approvals.reviewer', 'document.endorsements', 'logs.user']),
+            'dispensation' => $dispensation->load(['applicant', 'type', 'picketAssignment.teacher.user', 'recipients.student.user', 'responsibles.teacher.user', 'attachments', 'approvals.reviewer', 'document.endorsements', 'logs.user']),
+            'picketAssignments' => $this->picketAssignments(),
         ]);
     }
 
@@ -103,7 +109,30 @@ class DispensationController extends Controller
     {
         $this->authorize('review', $dispensation);
 
-        $approvals->adminReview($dispensation, $request->user(), true, $request->notes);
+        $data = $request->validate([
+            'notes' => ['nullable', 'string', 'max:1000'],
+            'picket_assignment_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('teacher_assignments', 'id')
+                    ->where('assignment_type', TeacherAssignment::TYPE_DUTY)
+                    ->where('is_active', true),
+            ],
+        ]);
+
+        if (array_key_exists('picket_assignment_id', $data)) {
+            $assignment = ! empty($data['picket_assignment_id'])
+                ? TeacherAssignment::findOrFail($data['picket_assignment_id'])
+                : null;
+
+            if ($assignment && ! $assignment->isScheduledOn(Carbon::parse($dispensation->date_start))) {
+                return back()->withErrors(['picket_assignment_id' => 'Jadwal guru piket tidak sesuai dengan hari atau tanggal dispensasi.'])->withInput();
+            }
+
+            $dispensation->update(['picket_assignment_id' => $assignment?->id]);
+        }
+
+        $approvals->adminReview($dispensation, $request->user(), true, $data['notes'] ?? null);
 
         return back()->with('status', 'Dispensasi disetujui.');
     }
@@ -127,5 +156,17 @@ class DispensationController extends Controller
         $approvals->markDocumentGenerated($dispensation, $request->user(), $document->document_number);
 
         return back()->with('status', 'PDF dibuat: '.$document->document_number);
+    }
+
+    private function picketAssignments(): EloquentCollection
+    {
+        return TeacherAssignment::query()
+            ->with('teacher.user')
+            ->where('assignment_type', TeacherAssignment::TYPE_DUTY)
+            ->where('is_active', true)
+            ->whereHas('teacher', fn ($teacher) => $teacher->where('is_active', true))
+            ->orderBy('day_of_week')
+            ->orderBy('start_time')
+            ->get();
     }
 }

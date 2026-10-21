@@ -268,6 +268,7 @@ class DispensationFlowTest extends TestCase
         $this->assertCount(4, $d->recipients);
         $this->assertCount(2, $d->responsibles);
         $this->assertEquals('ADMIN_REVIEW', $d->status);
+        $this->actingAs($guru)->get('/guru/activities')->assertOk()->assertSee('Lomba Robotik');
 
         // Wali kelas, guru penanggung jawab, dan siswa terkait menerima notifikasi.
         $admin = User::where('email', 'admin@sekolah.test')->first();
@@ -380,5 +381,116 @@ class DispensationFlowTest extends TestCase
             'type_id' => $type->id,
             'other_type' => 'Olimpiade sains',
         ]);
+
+    }
+
+    public function test_admin_cannot_assign_a_picket_teacher_outside_the_dispensation_day(): void
+    {
+        $this->seed();
+        $admin = User::where('email', 'admin@sekolah.test')->firstOrFail();
+        $admin->update(['two_factor_secret' => 'test-secret', 'two_factor_confirmed_at' => now()]);
+        $teacher = Teacher::where('user_id', User::where('email', 'guru@sekolah.test')->value('id'))->firstOrFail();
+        $student = Student::where('nis', '12001')->firstOrFail();
+        $type = DispensationType::where('category', DispensationType::CATEGORY_STUDENT)->firstOrFail();
+        $assignment = TeacherAssignment::create([
+            'teacher_id' => $teacher->id,
+            'assignment_type' => TeacherAssignment::TYPE_DUTY,
+            'day_of_week' => 'Senin',
+            'start_time' => '07:00',
+            'end_time' => '15:00',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)->post('/admin/dispensations', [
+            'type_id' => $type->id,
+            'title' => 'Izin Selasa',
+            'reason' => 'Keperluan pribadi.',
+            'date_start' => '2026-10-27',
+            'student_ids' => [$student->id],
+            'picket_assignment_id' => $assignment->id,
+        ])->assertSessionHasErrors('picket_assignment_id');
+
+        $this->assertDatabaseMissing('dispensations', ['title' => 'Izin Selasa']);
+    }
+
+    public function test_admin_can_create_a_personal_permit_with_matching_picket_schedule(): void
+    {
+        $this->seed();
+        $admin = User::where('email', 'admin@sekolah.test')->firstOrFail();
+        $admin->update(['two_factor_secret' => 'test-secret', 'two_factor_confirmed_at' => now()]);
+        $teacher = Teacher::where('user_id', User::where('email', 'guru@sekolah.test')->value('id'))->firstOrFail();
+        $student = Student::where('nis', '12001')->firstOrFail();
+        $type = DispensationType::where('category', DispensationType::CATEGORY_STUDENT)->firstOrFail();
+        $days = [1 => 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+        $assignment = TeacherAssignment::create([
+            'teacher_id' => $teacher->id,
+            'assignment_type' => TeacherAssignment::TYPE_DUTY,
+            'day_of_week' => $days[now()->dayOfWeekIso],
+            'start_time' => '07:00',
+            'end_time' => '15:00',
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($admin)->post('/admin/dispensations', [
+            'type_id' => $type->id,
+            'title' => 'Keperluan Pribadi',
+            'reason' => 'Mengurus keperluan pribadi.',
+            'date_start' => now()->toDateString(),
+            'permit_direction' => 'MASUK',
+            'student_ids' => [$student->id],
+            'picket_assignment_id' => $assignment->id,
+        ]);
+
+        $dispensation = Dispensation::where('title', 'Keperluan Pribadi')->firstOrFail();
+        $response->assertRedirect(route('admin.dispensations.show', $dispensation));
+        $this->assertDatabaseHas('dispensations', [
+            'id' => $dispensation->id,
+            'picket_assignment_id' => $assignment->id,
+            'permit_direction' => 'MASUK',
+            'status' => Dispensation::STATUS_APPROVED,
+        ]);
+    }
+
+    public function test_admin_can_assign_scheduled_picket_teacher_and_student_can_print_approved_permit(): void
+    {
+        $this->seed();
+        $studentUser = User::where('email', 'siswa@sekolah.test')->firstOrFail();
+        $admin = User::where('email', 'admin@sekolah.test')->firstOrFail();
+        $admin->update(['two_factor_secret' => 'test-secret', 'two_factor_confirmed_at' => now()]);
+        $teacher = Teacher::where('user_id', User::where('email', 'guru@sekolah.test')->value('id'))->firstOrFail();
+        $type = DispensationType::where('category', DispensationType::CATEGORY_STUDENT)->firstOrFail();
+        $days = [1 => 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+        $assignment = TeacherAssignment::create([
+            'teacher_id' => $teacher->id,
+            'assignment_type' => TeacherAssignment::TYPE_DUTY,
+            'day_of_week' => $days[now()->dayOfWeekIso],
+            'start_time' => '07:00',
+            'end_time' => '15:00',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($studentUser)->post('/siswa/dispensations', [
+            'type_id' => $type->id,
+            'title' => 'Izin Pribadi',
+            'reason' => 'Mengurus keperluan pribadi.',
+            'date_start' => now()->toDateString(),
+            'permit_direction' => 'KELUAR',
+        ])->assertRedirect();
+
+        $dispensation = Dispensation::where('title', 'Izin Pribadi')->firstOrFail();
+        $this->actingAs($studentUser)->get(route('dispensations.print', $dispensation))->assertNotFound();
+
+        $this->actingAs($admin)->post(route('admin.dispensations.approve', $dispensation), [
+            'picket_assignment_id' => $assignment->id,
+            'notes' => 'Disetujui.',
+        ])->assertRedirect();
+
+        $this->assertSame($assignment->id, $dispensation->fresh()->picket_assignment_id);
+        $this->actingAs($studentUser)
+            ->get(route('dispensations.print', $dispensation))
+            ->assertOk()
+            ->assertSee('KETERANGAN IZIN')
+            ->assertSee($teacher->user->name)
+            ->assertSee('KELUAR');
     }
 }

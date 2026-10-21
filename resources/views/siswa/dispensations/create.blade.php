@@ -25,6 +25,10 @@
                     </div>
                 </div>
                 <x-ui.input label="Judul" name="title" required :error="$errors->first('title')" />
+                <x-ui.select label="Jenis Izin" name="permit_direction" required :error="$errors->first('permit_direction')">
+                    <option value="KELUAR" @selected(old('permit_direction', 'KELUAR') === 'KELUAR')>Keluar kelas</option>
+                    <option value="MASUK" @selected(old('permit_direction') === 'MASUK')>Masuk kelas</option>
+                </x-ui.select>
                 <div class="grid sm:grid-cols-2 gap-4">
                     <x-ui.input label="Tanggal Mulai" name="date_start" type="date" required :error="$errors->first('date_start')" />
                     <x-ui.input label="Tanggal Selesai" name="date_end" type="date" :error="$errors->first('date_end')" />

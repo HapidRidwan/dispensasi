@@ -25,10 +25,23 @@
                     </div>
                 </div>
                 <x-ui.input label="Judul" name="title" :value="old('title')" required :error="$errors->first('title')" />
+                <x-ui.select label="Jenis Izin" name="permit_direction" required :error="$errors->first('permit_direction')">
+                    <option value="KELUAR" @selected(old('permit_direction', 'KELUAR') === 'KELUAR')>Keluar kelas</option>
+                    <option value="MASUK" @selected(old('permit_direction') === 'MASUK')>Masuk kelas</option>
+                </x-ui.select>
                 <div class="grid sm:grid-cols-2 gap-4">
                     <x-ui.input label="Tanggal Mulai" name="date_start" type="date" :value="old('date_start')" required :error="$errors->first('date_start')" />
                     <x-ui.input label="Tanggal Selesai" name="date_end" type="date" :value="old('date_end')" :error="$errors->first('date_end')" />
                 </div>
+                <x-ui.select label="Guru Piket" name="picket_assignment_id" :error="$errors->first('picket_assignment_id')">
+                    <option value="">Pilih sesuai jadwal hari izin</option>
+                    @foreach($picketAssignments as $assignment)
+                        <option value="{{ $assignment->id }}" @selected(old('picket_assignment_id') == $assignment->id)>
+                            {{ $assignment->teacher->user->name }} · {{ $assignment->day_of_week }} · {{ substr($assignment->start_time, 0, 5) }}–{{ substr($assignment->end_time, 0, 5) }}
+                        </option>
+                    @endforeach
+                </x-ui.select>
+                <p class="-mt-3 text-xs text-muted">Jadwal harus sesuai dengan hari pada tanggal mulai dispensasi.</p>
                 <div class="grid sm:grid-cols-2 gap-4">
                     <x-ui.input label="Waktu Mulai" name="time_start" type="time" :value="old('time_start')" />
                     <x-ui.input label="Waktu Selesai" name="time_end" type="time" :value="old('time_end')" />

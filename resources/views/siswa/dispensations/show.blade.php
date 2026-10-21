@@ -5,7 +5,12 @@
                 <h2 class="text-lg font-semibold text-ink">{{ $dispensation->title }}</h2>
                 <p class="text-sm text-muted">{{ $dispensation->other_type ?: $dispensation->type->name }} · {{ $dispensation->date_start->format('d M Y') }}</p>
             </div>
-            <x-ui.badge :status="$dispensation->status">{{ $dispensation->status }}</x-ui.badge>
+            <div class="flex items-center gap-3">
+                @if(in_array($dispensation->status, ['APPROVED', 'PDF_GENERATED', 'WAITING_ENDORSEMENT', 'FINALIZED', 'COMPLETED'], true))
+                    <a href="{{ route('dispensations.print', $dispensation) }}" target="_blank" class="text-sm font-medium text-primary hover:underline">Cetak Kartu Izin</a>
+                @endif
+                <x-ui.badge :status="$dispensation->status">{{ $dispensation->status }}</x-ui.badge>
+            </div>
         </div>
 
         <div class="bg-surface border border-line rounded-xl p-5">
@@ -15,6 +20,7 @@
                 <div><dt class="text-muted">Waktu</dt><dd class="text-ink">{{ $dispensation->time_start ?? '-' }} - {{ $dispensation->time_end ?? '-' }}</dd></div>
                 <div><dt class="text-muted">Lokasi</dt><dd class="text-ink">{{ $dispensation->location ?? '-' }}</dd></div>
                 <div><dt class="text-muted">Tujuan</dt><dd class="text-ink">{{ $dispensation->destination ?? '-' }}</dd></div>
+                <div><dt class="text-muted">Guru Piket</dt><dd class="text-ink">{{ $dispensation->picketAssignment?->teacher?->user?->name ?? 'Menunggu penetapan admin' }}</dd></div>
                 <div class="sm:col-span-2"><dt class="text-muted">Alasan</dt><dd class="text-ink">{{ $dispensation->reason }}</dd></div>
                 @if($dispensation->rejection_reason)
                     <div class="sm:col-span-2"><dt class="text-muted">Alasan Penolakan</dt><dd class="text-red-600">{{ $dispensation->rejection_reason }}</dd></div>

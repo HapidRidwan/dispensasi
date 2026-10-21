@@ -22,6 +22,8 @@ class DispensationService
             $dispensation = Dispensation::create([
                 'applicant_user_id' => $applicant->id,
                 'type_id' => $data['type_id'],
+                'picket_assignment_id' => $data['picket_assignment_id'] ?? null,
+                'permit_direction' => $data['permit_direction'] ?? 'KELUAR',
                 'other_type' => $data['other_type'] ?? null,
                 'title' => $data['title'],
                 'reason' => $data['reason'],

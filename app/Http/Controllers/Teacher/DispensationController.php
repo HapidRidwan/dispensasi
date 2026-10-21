@@ -53,6 +53,29 @@ class DispensationController extends Controller
         ]);
     }
 
+    public function indexActivities(Request $request)
+    {
+        $teacherId = $request->user()->teacher?->id;
+
+        return view('guru.activities.index', [
+            'activities' => Dispensation::query()
+                ->with(['type', 'recipients'])
+                ->withCount('recipients')
+                ->whereHas('responsibles', fn ($query) => $query->where('teacher_id', $teacherId ?? 0))
+                ->when($request->filled('q'), function ($query) use ($request) {
+                    $search = $request->string('q')->trim()->toString();
+                    $query->where(function ($query) use ($search) {
+                        $query->where('title', 'like', '%'.$search.'%')
+                            ->orWhere('status', 'like', '%'.$search.'%')
+                            ->orWhereHas('type', fn ($type) => $type->where('name', 'like', '%'.$search.'%'));
+                    });
+                })
+                ->latest()
+                ->paginate(20)
+                ->withQueryString(),
+        ]);
+    }
+
     public function show(Dispensation $dispensation)
     {
         $this->authorize('view', $dispensation);

@@ -2,12 +2,12 @@
 
 namespace Tests\Feature\Admin;
 
-use RuntimeException;
 use App\Models\SchoolClass;
 use App\Models\Teacher;
 use App\Models\TeacherAssignment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use RuntimeException;
 use Tests\TestCase;
 
 class TeacherAssignmentControllerTest extends TestCase
@@ -69,6 +69,31 @@ class TeacherAssignmentControllerTest extends TestCase
             ->where('class_id', $schoolClass->id)
             ->where('assignment_type', 'HOMEROOM')
             ->count());
+    }
+
+    public function test_admin_can_assign_a_teacher_to_a_picket_schedule(): void
+    {
+        $this->seed();
+        $admin = User::where('email', 'admin@sekolah.test')->firstOrFail();
+        $admin->update(['two_factor_secret' => 'test-secret', 'two_factor_confirmed_at' => now()]);
+        $teacher = Teacher::where('user_id', User::where('email', 'guru@sekolah.test')->value('id'))->firstOrFail();
+
+        $this->actingAs($admin)->post('/admin/teacher-assignments', [
+            'teacher_id' => $teacher->id,
+            'assignment_type' => TeacherAssignment::TYPE_DUTY,
+            'day_of_week' => 'Senin',
+            'start_time' => '07:00',
+            'end_time' => '15:00',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('teacher_assignments', [
+            'teacher_id' => $teacher->id,
+            'assignment_type' => TeacherAssignment::TYPE_DUTY,
+            'day_of_week' => 'Senin',
+            'start_time' => '07:00',
+            'end_time' => '15:00',
+            'is_active' => true,
+        ]);
     }
 
     public function test_migration_backfills_missing_homeroom_dates_from_the_school_year(): void

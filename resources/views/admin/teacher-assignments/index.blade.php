@@ -3,7 +3,7 @@
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
                 <h2 class="text-lg font-semibold text-ink">Penugasan Guru</h2>
-                <p class="text-sm text-muted">Penugasan wali kelas mengikuti tahun ajaran kelas.</p>
+                <p class="text-sm text-muted">Atur wali kelas, jadwal guru piket, dan penugasan lainnya.</p>
             </div>
             <x-ui.button onclick="document.getElementById('create-assignment').classList.remove('hidden')">Tambah Penugasan</x-ui.button>
         </div>
@@ -17,8 +17,7 @@
                         <tr class="text-left text-xs uppercase tracking-wide text-muted border-b border-line">
                             <th class="px-5 py-3 font-medium">Guru</th>
                             <th class="px-5 py-3 font-medium">Tugas</th>
-                            <th class="px-5 py-3 font-medium">Kelas</th>
-                            <th class="px-5 py-3 font-medium">Tahun Ajaran</th>
+                            <th class="px-5 py-3 font-medium">Kelas / Jadwal</th>
                             <th class="px-5 py-3 font-medium">Status</th>
                             <th class="px-5 py-3 font-medium text-right">Aksi</th>
                         </tr>
@@ -27,9 +26,16 @@
                         @forelse($assignments as $a)
                             <tr>
                                 <td class="px-5 py-3 text-ink">{{ $a->teacher->user->name }}</td>
-                                <td class="px-5 py-3 text-muted">{{ $a->assignment_type }}</td>
-                                <td class="px-5 py-3 text-muted">{{ $a->class?->name ?? '-' }}</td>
-                                <td class="px-5 py-3 text-muted">{{ $a->class?->academic_year ?? '-' }}</td>
+                                <td class="px-5 py-3 text-muted">
+                                    {{ match($a->assignment_type) { 'HOMEROOM' => 'Wali Kelas', 'DUTY' => 'Guru Piket', default => 'Lainnya' } }}
+                                </td>
+                                <td class="px-5 py-3 text-muted">
+                                    @if($a->assignment_type === 'DUTY')
+                                        {{ $a->day_of_week }} · {{ substr($a->start_time, 0, 5) }}–{{ substr($a->end_time, 0, 5) }}
+                                    @else
+                                        {{ $a->class?->name ?? '-' }}{{ $a->class ? ' · '.$a->class->academic_year : '' }}
+                                    @endif
+                                </td>
                                 <td class="px-5 py-3">
                                     <span class="inline-flex items-center gap-1.5 text-xs {{ $a->is_active ? 'text-green-700' : 'text-red-600' }}">
                                         <span class="h-1.5 w-1.5 rounded-full {{ $a->is_active ? 'bg-green-500' : 'bg-red-500' }}"></span>
@@ -57,20 +63,41 @@
         <form method="POST" action="{{ route('admin.teacher-assignments.store') }}" class="space-y-4">
             @csrf
             <x-ui.select label="Guru" name="teacher_id" required>
-                @foreach(\App\Models\Teacher::with('user')->get() as $t)
+                <option value="">Pilih guru</option>
+                @foreach($teachers as $t)
                     <option value="{{ $t->id }}">{{ $t->user->name }}</option>
                 @endforeach
             </x-ui.select>
-            <x-ui.select label="Jenis Tugas" name="assignment_type" required>
+            <div x-data="{ assignmentType: @js(old('assignment_type', 'HOMEROOM')) }">
+                <x-ui.select label="Jenis Tugas" name="assignment_type" required x-model="assignmentType">
                 <option value="HOMEROOM">Wali Kelas</option>
+                <option value="DUTY">Guru Piket</option>
                 <option value="OTHER">Lainnya</option>
-            </x-ui.select>
-            <x-ui.select label="Kelas (tahun ajaran)" name="class_id">
-                <option value="">— Tidak ada —</option>
-                @foreach(\App\Models\SchoolClass::where('is_active', true)->get() as $class)
-                    <option value="{{ $class->id }}">{{ $class->name }} ({{ $class->academic_year }})</option>
-                @endforeach
-            </x-ui.select>
+                </x-ui.select>
+                <div x-show="assignmentType === 'HOMEROOM'" x-cloak>
+                    <x-ui.select class="mt-4" label="Kelas (tahun ajaran)" name="class_id">
+                        <option value="">Pilih kelas</option>
+                        @foreach($classes as $class)
+                            <option value="{{ $class->id }}" @selected(old('class_id') == $class->id)>{{ $class->name }} ({{ $class->academic_year }})</option>
+                        @endforeach
+                    </x-ui.select>
+                </div>
+                <div x-show="assignmentType === 'DUTY'" x-cloak class="mt-4 space-y-4">
+                    <x-ui.select label="Hari Piket" name="day_of_week">
+                        <option value="">Pilih hari</option>
+                        @foreach(['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'] as $day)
+                            <option value="{{ $day }}" @selected(old('day_of_week') === $day)>{{ $day }}</option>
+                        @endforeach
+                    </x-ui.select>
+                    <div class="grid grid-cols-2 gap-3">
+                        <x-ui.input label="Mulai" name="start_time" type="time" :value="old('start_time')" />
+                        <x-ui.input label="Selesai" name="end_time" type="time" :value="old('end_time')" />
+                    </div>
+                    @error('day_of_week')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+                    @error('start_time')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+                    @error('end_time')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+                </div>
+            </div>
             @error('class_id')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
             <div class="flex justify-end gap-3">
                 <x-ui.button type="button" variant="secondary" onclick="document.getElementById('create-assignment').classList.add('hidden')">Batal</x-ui.button>

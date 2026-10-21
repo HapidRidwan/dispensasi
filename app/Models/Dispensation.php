@@ -32,6 +32,8 @@ class Dispensation extends Model
     protected $fillable = [
         'applicant_user_id',
         'type_id',
+        'picket_assignment_id',
+        'permit_direction',
         'other_type',
         'title',
         'reason',
@@ -64,6 +66,11 @@ class Dispensation extends Model
     public function type(): BelongsTo
     {
         return $this->belongsTo(DispensationType::class, 'type_id');
+    }
+
+    public function picketAssignment(): BelongsTo
+    {
+        return $this->belongsTo(TeacherAssignment::class, 'picket_assignment_id');
     }
 
     public function recipients(): HasMany

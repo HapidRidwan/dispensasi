@@ -41,6 +41,7 @@ Route::middleware([
 
     Route::post('/push-subscriptions', [PushSubscriptionController::class, 'store'])->name('push-subscriptions.store');
     Route::delete('/push-subscriptions', [PushSubscriptionController::class, 'destroy'])->name('push-subscriptions.destroy');
+    Route::get('/dispensations/{dispensation}/print', [StudentDispensationController::class, 'print'])->name('dispensations.print');
 });
 
 Route::middleware(['auth', 'role:admin', 'require-admin-2fa'])->prefix('admin')->name('admin.')->group(function () {
@@ -157,7 +158,7 @@ Route::middleware(['auth', 'role:guru'])->prefix('guru')->name('guru.')->group(f
     Route::get('/dispensations/{dispensation}', [TeacherDispensationController::class, 'show'])->name('dispensations.show');
     Route::post('/dispensations', [TeacherDispensationController::class, 'store'])->name('dispensations.store');
     Route::post('/dispensations/{dispensation}/verify', [TeacherDispensationController::class, 'verify'])->name('dispensations.verify');
-    Route::get('/activities', [TeacherDispensationController::class, 'index'])->name('activities.index');
+    Route::get('/activities', [TeacherDispensationController::class, 'indexActivities'])->name('activities.index');
     Route::get('/activities/create', fn () => view('guru.activities.create', [
         'schoolSignatories' => SchoolSignatory::query()->where('is_active', true)->orderBy('position')->orderBy('name')->get(),
     ]))->name('activities.create');

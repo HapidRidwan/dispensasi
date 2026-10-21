@@ -3,8 +3,11 @@
 namespace App\Http\Requests;
 
 use App\Models\DispensationType;
+use App\Models\TeacherAssignment;
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreStudentDispensationRequest extends FormRequest
 {
@@ -35,6 +38,12 @@ class StoreStudentDispensationRequest extends FormRequest
 
         $rules = [
             'type_id' => ['required', Rule::exists('dispensation_types', 'id')->where('category', DispensationType::CATEGORY_STUDENT)->where('is_active', true)],
+            'permit_direction' => ['nullable', Rule::in(['KELUAR', 'MASUK'])],
+            'picket_assignment_id' => Rule::when($this->user()?->isAdmin(), [
+                'nullable',
+                'integer',
+                Rule::exists('teacher_assignments', 'id')->where('assignment_type', TeacherAssignment::TYPE_DUTY)->where('is_active', true),
+            ], ['prohibited']),
             'other_type' => [$isOtherType ? 'required' : 'nullable', 'string', 'max:100'],
             'title' => ['required', 'string', 'max:255'],
             'reason' => ['required', 'string'],
@@ -58,6 +67,21 @@ class StoreStudentDispensationRequest extends FormRequest
         }
 
         return $rules;
+    }
+
+    public function after(): array
+    {
+        return [function (Validator $validator): void {
+            if (! $this->filled('picket_assignment_id') || $validator->errors()->hasAny(['date_start', 'picket_assignment_id'])) {
+                return;
+            }
+
+            $assignment = TeacherAssignment::query()->find($this->integer('picket_assignment_id'));
+
+            if ($assignment && ! $assignment->isScheduledOn(Carbon::parse($this->input('date_start')))) {
+                $validator->errors()->add('picket_assignment_id', 'Jadwal guru piket tidak sesuai dengan hari atau tanggal dispensasi.');
+            }
+        }];
     }
 
     protected function prepareForValidation(): void

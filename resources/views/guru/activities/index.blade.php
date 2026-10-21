@@ -25,7 +25,7 @@
                             <tr>
                                 <td class="px-5 py-3 text-ink">{{ $a->title }}</td>
                                 <td class="px-5 py-3 text-muted">{{ $a->date_start->format('d M Y') }}</td>
-                                <td class="px-5 py-3 text-muted">{{ $a->recipients()->count() }} siswa</td>
+                                <td class="px-5 py-3 text-muted">{{ $a->recipients_count }} siswa</td>
                                 <td class="px-5 py-3"><x-ui.badge :status="$a->status">{{ $a->status }}</x-ui.badge></td>
                                 <td class="px-5 py-3 text-right"><a href="{{ route('guru.activities.show', $a) }}" class="text-primary hover:underline">Detail</a></td>
                             </tr>

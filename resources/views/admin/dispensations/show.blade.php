@@ -5,7 +5,12 @@
                 <h2 class="text-lg font-semibold text-ink">{{ $dispensation->title }}</h2>
                 <p class="text-sm text-muted">Review pengajuan dispensasi.</p>
             </div>
-            <x-ui.badge :status="$dispensation->status">{{ $dispensation->status }}</x-ui.badge>
+            <div class="flex items-center gap-3">
+                @if(in_array($dispensation->status, ['APPROVED', 'PDF_GENERATED', 'WAITING_ENDORSEMENT', 'FINALIZED', 'COMPLETED'], true))
+                    <a href="{{ route('dispensations.print', $dispensation) }}" target="_blank" class="text-sm font-medium text-primary hover:underline">Cetak Kartu Izin</a>
+                @endif
+                <x-ui.badge :status="$dispensation->status">{{ $dispensation->status }}</x-ui.badge>
+            </div>
         </div>
 
         <div class="grid lg:grid-cols-3 gap-6">
@@ -19,6 +24,7 @@
                         <div><dt class="text-muted">Tanggal Selesai</dt><dd class="text-ink">{{ $dispensation->date_end?->format('d M Y') ?? '-' }}</dd></div>
                         <div><dt class="text-muted">Waktu</dt><dd class="text-ink">{{ $dispensation->time_start ?? '-' }} - {{ $dispensation->time_end ?? '-' }}</dd></div>
                         <div><dt class="text-muted">Lokasi</dt><dd class="text-ink">{{ $dispensation->location ?? '-' }}</dd></div>
+                        <div><dt class="text-muted">Guru Piket</dt><dd class="text-ink">{{ $dispensation->picketAssignment?->teacher?->user?->name ?? '-' }}{{ $dispensation->picketAssignment ? ' · '.$dispensation->picketAssignment->day_of_week.' '.substr($dispensation->picketAssignment->start_time, 0, 5).'-'.substr($dispensation->picketAssignment->end_time, 0, 5) : '' }}</dd></div>
                         <div class="sm:col-span-2"><dt class="text-muted">Alasan</dt><dd class="text-ink">{{ $dispensation->reason }}</dd></div>
                     </dl>
                 </div>
@@ -102,6 +108,14 @@
     <x-ui.modal title="Setujui Pengajuan" id="approve-modal" class="hidden">
         <form method="POST" action="{{ route('admin.dispensations.approve', $dispensation) }}" class="space-y-4">
             @csrf
+            <x-ui.select label="Guru Piket (opsional)" name="picket_assignment_id" :error="$errors->first('picket_assignment_id')">
+                <option value="">Tidak ditentukan</option>
+                @foreach($picketAssignments as $assignment)
+                    <option value="{{ $assignment->id }}" @selected(old('picket_assignment_id', $dispensation->picket_assignment_id) == $assignment->id)>
+                        {{ $assignment->teacher->user->name }} · {{ $assignment->day_of_week }} · {{ substr($assignment->start_time, 0, 5) }}–{{ substr($assignment->end_time, 0, 5) }}
+                    </option>
+                @endforeach
+            </x-ui.select>
             <x-ui.input label="Catatan (opsional)" name="notes" />
             <div class="flex justify-end gap-3">
                 <x-ui.button type="button" variant="secondary" onclick="document.getElementById('approve-modal').classList.add('hidden')">Batal</x-ui.button>

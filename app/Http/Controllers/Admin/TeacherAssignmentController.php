@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\SchoolClass;
+use App\Models\Teacher;
 use App\Models\TeacherAssignment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class TeacherAssignmentController extends Controller
 {
@@ -26,21 +28,35 @@ class TeacherAssignmentController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        return view('admin.teacher-assignments.index', compact('assignments'));
+        return view('admin.teacher-assignments.index', [
+            'assignments' => $assignments,
+            'teachers' => Teacher::query()->with('user')->where('is_active', true)->orderBy('id')->get(),
+            'classes' => SchoolClass::query()->where('is_active', true)->orderBy('name')->get(),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
-            'teacher_id' => ['required', 'exists:teachers,id'],
+        $data = $request->validate([
+            'teacher_id' => ['required', Rule::exists('teachers', 'id')->where('is_active', true)],
             'class_id' => ['required_if:assignment_type,HOMEROOM', 'nullable', 'exists:classes,id'],
-            'assignment_type' => ['required', 'in:HOMEROOM,OTHER'],
+            'assignment_type' => ['required', Rule::in([TeacherAssignment::TYPE_HOMEROOM, TeacherAssignment::TYPE_DUTY, TeacherAssignment::TYPE_OTHER])],
+            'day_of_week' => ['required_if:assignment_type,DUTY', 'nullable', Rule::in(['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'])],
+            'start_time' => ['required_if:assignment_type,DUTY', 'nullable', 'date_format:H:i'],
+            'end_time' => ['required_if:assignment_type,DUTY', 'nullable', 'date_format:H:i', 'after:start_time'],
         ]);
 
-        $assignmentData = $request->only(['teacher_id', 'class_id', 'assignment_type']);
+        $assignmentData = [
+            'teacher_id' => $data['teacher_id'],
+            'assignment_type' => $data['assignment_type'],
+            'class_id' => $data['assignment_type'] === TeacherAssignment::TYPE_HOMEROOM ? $data['class_id'] : null,
+            'day_of_week' => $data['assignment_type'] === TeacherAssignment::TYPE_DUTY ? $data['day_of_week'] : null,
+            'start_time' => $data['assignment_type'] === TeacherAssignment::TYPE_DUTY ? $data['start_time'] : null,
+            'end_time' => $data['assignment_type'] === TeacherAssignment::TYPE_DUTY ? $data['end_time'] : null,
+        ];
 
-        if ($request->assignment_type === 'HOMEROOM') {
-            $schoolClass = SchoolClass::findOrFail($request->integer('class_id'));
+        if ($data['assignment_type'] === TeacherAssignment::TYPE_HOMEROOM) {
+            $schoolClass = SchoolClass::findOrFail((int) $data['class_id']);
             preg_match('/^(\d{4})\s*[\/-]\s*(\d{4})$/', $schoolClass->academic_year, $years);
 
             if (count($years) !== 3 || (int) $years[2] !== (int) $years[1] + 1) {
